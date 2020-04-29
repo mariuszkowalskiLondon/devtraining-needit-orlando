@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ws_operation">
+    <sys_ws_operation action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <consumes>application/json</consumes>
+        <consumes_customized>false</consumes_customized>
+        <default_operation_uri/>
+        <enforce_acl>cf9d01d3e73003009d6247e603f6a990</enforce_acl>
+        <http_method>GET</http_method>
+        <name>ni_getinfo (v2)</name>
+        <operation_script><![CDATA[(function process(/*RESTAPIRequest*/ request, /*RESTAPIResponse*/ response) {
+
+    // implement resource here
+	var requestUser = request.pathParams.user_name;
+	var requestNIQuery = request.queryParams.ni_query;
+	
+	
+	var userGR = new GlideRecord('sys_user');
+	userGR.get('user_name',requestUser);
+	
+	if (!userGR.user_name) {
+		
+		var apiError = new sn_ws_err.ServiceError();
+		apiError.setStatus(542);
+		apiError.setMessage("User not found");
+		apiError.setDetail("No user record found for the user_name passed into the ni_info web service resource using the user_name path parameter.");
+		response.setError(apiError);
+		return;
+		
+	}
+	
+	var activeNeedItGA = new GlideAggregate('x_58872_needit_needit');
+	activeNeedItGA.addAggregate('COUNT');
+	activeNeedItGA.addQuery('u_requested_for', userGR.sys_id);
+	activeNeedItGA.addEncodedQuery(requestNIQuery);
+	activeNeedItGA.groupBy('u_request_type');
+	activeNeedItGA.query();
+	
+	var needitRecs = 0;
+	var niUserRecs = [];
+	var needitRecsCount = 0;
+	
+	while (activeNeedItGA.next()) {
+		
+		needitRecs = activeNeedItGA.getAggregate('COUNT');
+		var reqType = activeNeedItGA.u_request_type.getDisplayValue();
+		niUserRecs.push({"requestType": reqType, "count": needitRecs});
+		needitRecsCount = parseInt(needitRecsCount) + parseInt(needitRecs);
+		
+	}
+	
+	var body = {};
+	body.totalUserNIRecs = needitRecsCount;
+	body.catCounts = niUserRecs;
+	body.user = {"User name": userGR.user_name,
+"User ID": userGR.sys_id};
+	
+	response.setBody(body);
+	
+
+})(request, response);]]></operation_script>
+        <operation_uri>/api/x_58872_needit/v2/needit_api/ni_getinfo/{user_name}</operation_uri>
+        <produces>application/json,application/xml,text/xml</produces>
+        <produces_customized>false</produces_customized>
+        <relative_path>/ni_getinfo/{user_name}</relative_path>
+        <request_example/>
+        <requires_acl_authorization>true</requires_acl_authorization>
+        <requires_authentication>true</requires_authentication>
+        <requires_snc_internal_role>true</requires_snc_internal_role>
+        <short_description>Find the NeedIt active NeedIt records for a user. Group by What needed.</short_description>
+        <sys_class_name>sys_ws_operation</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2020-04-29 08:24:20</sys_created_on>
+        <sys_id>0c7a46d02fa01450bbdedeb6f699b649</sys_id>
+        <sys_mod_count>1</sys_mod_count>
+        <sys_name>ni_getinfo (v2)</sys_name>
+        <sys_package display_value="NeedIt" source="x_58872_needit">6ead8e780f603200cd674f8ce1050ed1</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="NeedIt">6ead8e780f603200cd674f8ce1050ed1</sys_scope>
+        <sys_update_name>sys_ws_operation_0c7a46d02fa01450bbdedeb6f699b649</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2020-04-29 08:27:06</sys_updated_on>
+        <web_service_definition display_value="NeedIt API">58c2b5102f601450bbdedeb6f699b6b2</web_service_definition>
+        <web_service_version display_value="v2">887a46d02fa01450bbdedeb6f699b647</web_service_version>
+    </sys_ws_operation>
+</record_update>
